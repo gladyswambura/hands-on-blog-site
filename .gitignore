@@ -1,0 +1,4 @@
+blogvirtual/
+*.pyc
+start.sh
+__pycache__
