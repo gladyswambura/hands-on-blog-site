@@ -47,6 +47,15 @@ def blog(id):
         new_comment.save_comment()
         return redirect(url_for("main.blog", id = blog.id))
 
+# delete comment
+@main.route("/blog/<int:id>/<int:comment_id>/delete")
+def delete_comment(id, comment_id):
+    blog = Blog.query.filter_by(id = id).first()
+    comment = Comment.query.filter_by(id = comment_id).first()
+    db.session.delete(comment)
+    db.session.commit()
+    return redirect(url_for("main.blog", id = blog.id))
+
 #  new blog post
 @main.route('/newblog', methods=['POST', 'GET'])
 @login_required
@@ -74,7 +83,8 @@ def new_blog():
     
     return render_template('newblog.html', title='New Blog', blog_form=blog_form)
 
-@main.route("/post/<int:id>/update", methods = ["POST", "GET"])
+# edit or update blog post
+@main.route("/blog/<int:id>/update", methods = ["POST", "GET"])
 @login_required
 def edit_post(id):
     blog = Blog.query.filter_by(id = id).first()
@@ -88,7 +98,7 @@ def edit_post(id):
 
         db.session.add(blog)
         db.session.commit()
-        return redirect(url_for("main.post", id = blog.id))
+        return redirect(url_for("main.blog", id = blog.id))
 
     return render_template("editblogpost.html", blog = blog, edit_form = edit_form)
 
