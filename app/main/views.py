@@ -1,16 +1,19 @@
 from flask import (render_template, request, redirect, url_for, abort, flash)
 from . import main
-from ..models import Blog, User, Comment, Post, Subscribers
+from ..models import Blog, User, Comment, Subscribers
 from flask_login import login_required, current_user
-from .forms import (UpdateProfile, BlogForm, CommentForm, UpdateBLogForm)
+from .forms import (UpdateProfile, BlogForm, CommentForm, UpdateBlogForm)
 from datetime import datetime
 from .. import db
-from ..requests import get_quote
 from ..email import welcome_message, notification_message
 
 @main.route('/')
 def index():
     return render_template('index.html')
+
+@main.route('/about')
+def about():
+    return render_template('about.html')
 
 @main.route('/newblog', methods=['POST', 'GET'])
 @login_required
@@ -28,12 +31,32 @@ def new_blog():
                         blog_by = current_user.username,
                         user_id = current_user.id)
         new_blog.save_blog()
-        subs = Subscribers.query.all()
+        db.session.add(new_blog)
+        db.session.commit()
+        subs = Subscribers.query_all()
         for sub in subs:
             notification_message(blog_title, "email/notification", sub.email, new_blog = new_blog)
             pass
         return redirect(url_for("main.blog", id = new_blog.id))
     
     return render_template('newblog.html', title='New Blog', blog_form=blog_form)
+
+@main.route("/post/<int:id>/update", methods = ["POST", "GET"])
+@login_required
+def edit_post(id):
+    blog = Blog.query.filter_by(id = id).first()
+    edit_form = UpdateBlogForm()
+
+    if edit_form.validate_on_submit():
+        blog.blog_title = edit_form.title.data
+        edit_form.title.data = ""
+        blog.blog_content = edit_form.content.data
+        edit_form.content.data = ""
+
+        db.session.add(blog)
+        db.session.commit()
+        return redirect(url_for("main.post", id = blog.id))
+
+    return render_template("editblogpost.html", blog = blog, edit_form = edit_form)
 
    
