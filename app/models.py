@@ -17,6 +17,13 @@ class User(UserMixin, db.Model):
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    def set_password(self, password):
+        pass_hash = generate_password_hash(password)
+        self.password = pass_hash
+
+    def verify_password(self, password):
+        return check_password_hash(self.password, password)
+
     def __repr__(self):
         return f'User: {self.username}'
 
@@ -41,8 +48,8 @@ class Blog(db.Model):
 
     @classmethod
     def get_user_blogs(cls,id):
-        posts = Blog.query.filter_by(user_id = id).order_by(Blog.date_posted .desc()).all()
-        return posts
+        blogs = Blog.query.filter_by(user_id = id).order_by(Blog.date_posted .desc()).all()
+        return blogs
 
     @classmethod
     def get_all_blogs(cls):
@@ -53,27 +60,65 @@ class Blog(db.Model):
 
 
 class Comment(db.Model):
-    __tablename__ = 'comments'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    blog_id = db.Column(db.Integer, db.ForeignKey('blogs.id'))
-    comment = db.Column(db.Text())
+    __tablename__ = "comments"
+
+    id = db.Column(db.Integer, primary_key = True)
+    comment = db.Column(db.String)
+    comment_at = db.Column(db.DateTime)
+    comment_by = db.Column(db.String)
+    like_count = db.Column(db.Integer, default = 0)
+    blog_id = db.Column(db.Integer, db.ForeignKey("blogs.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
     def save_comment(self):
         db.session.add(self)
         db.session.commit()
 
     @classmethod
-    def get_comments(cls, id):
-        comments = Comment.query.filter_by(id = id).all()
-        return comments
-
-    def delete(self):
-        db.session.delete(self)
+    def delete_comment(cls, id):
+        gone = Comment.query.filter_by(id = id).first()
+        db.session.delete(gone)
         db.session.commit()
 
+    @classmethod
+    def get_comments(cls,id):
+        comments = Comment.query.filter_by(blog_id = id).all()
+        return comments        
+
+
+    @property
+    def password(self):
+        raise AttributeError("You cannot read the password attribute")
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    # User like logic
+    def like_post(self, post):
+        if not self.has_liked_post(post):
+            like = BlogLike(user_id = self.id,blog_id = post.id)
+            db.session.add(like)
+
+    # User dislike logic
+    def unlike_post(self, post):
+        if self.has_liked_post(post):
+            BlogLike.query.filter_by(
+                user_id = self.id,
+                blog_id = post.id).delete()
+
+    # Check if user has liked post
+    def has_liked_post(self, post):
+        return BlogLike.query.filter(
+            BlogLike.user_id == self.id,
+            BlogLike.blog_id == post.id).count() > 0
+
+    # string representaion to print out a row of a column, important in debugging
     def __repr__(self):
-        return f'Comments: {self.comment}'
+        return f"User {self.username}"
 
 
 class Subscribers(db.Model):
@@ -85,7 +130,7 @@ class BlogLike(db.Model):
     __tablename__ = "blog_like"
     id = db.Column(db.Integer, primary_key = True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    post_id = db.Column(db.Integer, db.ForeignKey("blogs.id"))
+    blog_id = db.Column(db.Integer, db.ForeignKey("blogs.id"))
 
 
 class Quote:
