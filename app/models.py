@@ -25,10 +25,11 @@ class User(UserMixin, db.Model):
 class Blog(db.Model):
     __tablename__ = 'blogs'
     id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), nullable=False)
     title = db.Column(db.String(100), nullable=False)
     date_posted = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('blogs.id'), nullable=False)
 
     def save_blog(self):
         db.session.add(self)
@@ -40,12 +41,12 @@ class Blog(db.Model):
 
     @classmethod
     def get_user_blogs(cls,id):
-        posts = Blog.query.filter_by(user_id = id).order_by(Blog.posted_at.desc()).all()
+        posts = Blog.query.filter_by(user_id = id).order_by(Blog.date_posted .desc()).all()
         return posts
 
     @classmethod
     def get_all_blogs(cls):
-        return Blog.query.order_by(Blog.posted_at).all()
+        return Blog.query.order_by(Blog.date_posted ).all()
 
     def __repr__(self):
         return f"Post('{self.title}', '{self.date_posted}')"
@@ -85,6 +86,15 @@ class BlogLike(db.Model):
     id = db.Column(db.Integer, primary_key = True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     post_id = db.Column(db.Integer, db.ForeignKey("blogs.id"))
+
+
+class Quote:
+    """
+    Blueprint class for quotes consumed from API
+    """
+    def __init__(self, author, quote):
+        self.author = author
+        self.quote = quote
 
     
 
