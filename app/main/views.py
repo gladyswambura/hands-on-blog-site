@@ -5,16 +5,49 @@ from flask_login import login_required, current_user
 from .forms import (UpdateProfile, BlogForm, CommentForm, UpdateBlogForm)
 from datetime import datetime
 from .. import db
+from ..requests import get_quote
 from ..email import welcome_message, notification_message
 
 @main.route('/')
 def index():
-    return render_template('index.html')
+    blogs = Blog.get_all_blogs()
+    quote = get_quote()
 
+    if request.method == "POST":
+        new_sub = Subscribers(email = request.form.get("subscriber"))
+        db.session.add(new_sub)
+        db.session.commit()
+        welcome_message("Thank you for subscribing to the Hands On", "email/welcome", new_sub.email)
+    return render_template('index.html', quote = quote, blog = blogs)
+
+# about
 @main.route('/about')
 def about():
     return render_template('about.html')
 
+# blog posts
+@main.route("/blog/<int:id>", methods = ["POST", "GET"])
+def blog(id):
+    blog = Blog.query.filter_by(id = id).first()
+    comments = Comment.query.filter_by(blog_id = id).all()
+    comment_form = CommentForm()
+    comment_count = len(comments)
+
+    if comment_form.validate_on_submit():
+        comment = comment_form.comment.data
+        comment_form.comment.data = ""
+        comment_alias = comment_form.alias.data
+        comment_form.alias.data = ""
+        if current_user.is_authenticated:
+            comment_alias = current_user.username
+        new_comment = Comment(comment = comment, 
+                            comment_at = datetime.now(),
+                            comment_by = comment_alias,
+                            blog_id = id)
+        new_comment.save_comment()
+        return redirect(url_for("main.blog", id = blog.id))
+
+#  new blog post
 @main.route('/newblog', methods=['POST', 'GET'])
 @login_required
 def new_blog():
