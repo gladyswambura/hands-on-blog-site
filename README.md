@@ -6,7 +6,8 @@
 ## Description 
 - This is a for personal blogging website where you can create and share your opinions and other users can read and comment on them.
 
-![image](https://user-images.githubusercontent.com/97955649/168932243-9200c542-aad3-4b1e-9d52-eb4b16ac327f.png)
+![image](https://user-images.githubusercontent.com/97955649/168932475-9199170a-22b2-42df-902d-5450a330540d.png)
+
 
 
 ## User Story in Pictures
